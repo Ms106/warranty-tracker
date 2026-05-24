@@ -4,6 +4,7 @@ import Auth from "./Auth"
 import Dashboard from "./Dashboard"
 import ItemsList from "./ItemsList"
 import ItemForm from "./ItemForm"
+import DocumentUpload from "./DocumentUpload"
 
 async function getOrCreateHousehold(userId) {
   const { data: membership } = await supabase
@@ -35,6 +36,7 @@ function App() {
   const [currentPage, setCurrentPage] = useState("Dashboard")
   const [showForm, setShowForm] = useState(false)
   const [editItem, setEditItem] = useState(null)
+  const [newlySavedItem, setNewlySavedItem] = useState(null)
   const [selectedItem, setSelectedItem] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
 
@@ -63,10 +65,15 @@ function App() {
     setShowForm(true)
   }
 
-  function handleSaved() {
+  function handleSaved(savedItem) {
     setShowForm(false)
     setEditItem(null)
     setRefreshKey(k => k + 1)
+    if (!editItem) setNewlySavedItem(savedItem)
+  }
+
+  function handlePhotoDone() {
+    setNewlySavedItem(null)
   }
 
   function handleSelectFromDashboard(item) {
@@ -132,6 +139,23 @@ function App() {
               onSaved={handleSaved}
               onCancel={() => { setShowForm(false); setEditItem(null) }}
             />
+          </div>
+        ) : newlySavedItem ? (
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <h2 className="text-base font-semibold text-gray-900">{newlySavedItem.name} saved</h2>
+            </div>
+            <p className="text-sm text-gray-500 mb-5">Add a receipt, warranty card, or photo while you have it handy.</p>
+            <DocumentUpload itemId={newlySavedItem.id} householdId={householdId} />
+            <button
+              onClick={handlePhotoDone}
+              className="mt-5 w-full bg-amber-700 text-white rounded-lg py-2 text-sm font-medium hover:bg-amber-800"
+            >
+              Done
+            </button>
           </div>
         ) : (
           <>
