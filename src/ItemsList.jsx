@@ -18,9 +18,17 @@ function WarrantyBadge({ days }) {
   return <span className="text-xs font-medium text-green-700 bg-green-100 px-2 py-0.5 rounded-full">Active</span>
 }
 
-function ItemRow({ item, householdId, onEdit, defaultOpen }) {
+function ItemRow({ item, householdId, onEdit, onDelete, defaultOpen }) {
   const [open, setOpen] = useState(defaultOpen || false)
+  const [confirming, setConfirming] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const days = daysBetween(item.warranty_expiry)
+
+  async function handleDelete() {
+    setDeleting(true)
+    await supabase.from("items").delete().eq("id", item.id)
+    onDelete(item.id)
+  }
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -92,13 +100,38 @@ function ItemRow({ item, householdId, onEdit, defaultOpen }) {
           {item.notes && (
             <p className="text-sm text-gray-600 mt-3 bg-gray-50 rounded-lg px-3 py-2">{item.notes}</p>
           )}
-          <div className="flex gap-2 mt-4">
+          <div className="flex items-center gap-4 mt-4">
             <button
               onClick={() => onEdit(item)}
               className="text-sm text-amber-700 font-medium hover:text-amber-900"
             >
-              Edit item
+              Edit
             </button>
+            {confirming ? (
+              <div className="flex items-center gap-3 ml-auto">
+                <span className="text-sm text-gray-600">Delete this item?</span>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="text-sm font-medium text-white bg-red-600 hover:bg-red-700 px-3 py-1 rounded-lg disabled:opacity-50"
+                >
+                  {deleting ? "Deleting..." : "Delete"}
+                </button>
+                <button
+                  onClick={() => setConfirming(false)}
+                  className="text-sm text-gray-500 hover:text-gray-700"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirming(true)}
+                className="text-sm text-red-500 font-medium hover:text-red-700 ml-auto"
+              >
+                Delete
+              </button>
+            )}
           </div>
           <div className="mt-4">
             <DocumentUpload itemId={item.id} householdId={householdId} />
@@ -113,6 +146,10 @@ export default function ItemsList({ householdId, onEdit, selectedItem, clearSele
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
+
+  function handleDelete(id) {
+    setItems(prev => prev.filter(i => i.id !== id))
+  }
 
   useEffect(() => {
     async function load() {
@@ -169,6 +206,7 @@ export default function ItemsList({ householdId, onEdit, selectedItem, clearSele
               item={item}
               householdId={householdId}
               onEdit={onEdit}
+              onDelete={handleDelete}
               defaultOpen={selectedItem?.id === item.id}
             />
           ))}
